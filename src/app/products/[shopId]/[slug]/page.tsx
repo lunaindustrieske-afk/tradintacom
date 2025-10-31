@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -64,6 +65,8 @@ import { ReportModal } from '@/components/report-modal';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { WishlistButton } from '@/components/wishlist-button';
+import { getRankedProducts } from '@/services/DiscoveryEngine';
+import { ProductCard } from '@/components/product-card';
 
 type Variant = {
     id: string;
@@ -206,31 +209,15 @@ export default function ProductDetailPage() {
                         setUserHasPledged(!pledgeSnapshot.empty);
                     }
                 }
-
-                const relatedQuery = query(
-                  collectionGroup(firestore, 'products'),
-                  where('category', '==', productData.category),
-                  where('status', '==', 'published'),
-                  limit(5)
-                );
-                const relatedSnapshot = await getDocs(relatedQuery);
-                const relatedPromises = relatedSnapshot.docs
-                  .filter(doc => doc.id !== productData.id)
-                  .map(async doc => {
-                    const data = doc.data();
-                    const manufacturerId = doc.ref.parent.parent?.id;
-                    if (manufacturerId) {
-                      const manufDoc = await getDoc(doc.ref.parent.parent);
-                      if (manufDoc.exists()) {
-                        const manufData = manufDoc.data();
-                        return { ...data, id: doc.id, shopId: manufData.shopId, slug: data.slug } as ProductWithVariants;
-                      }
-                    }
-                    return null;
-                  });
-
-                const related = (await Promise.all(relatedPromises)).filter(p => p !== null) as ProductWithVariants[];
-                setRelatedProducts(related.slice(0, 4));
+                
+                // Fetch related products from the same category
+                if (productData.category) {
+                    const allRanked = await getRankedProducts(user?.uid || null);
+                    const related = allRanked
+                        .filter(p => p.category === productData.category && p.id !== productData.id)
+                        .slice(0, 4);
+                    setRelatedProducts(related as ProductWithVariants[]);
+                }
             }
             
             setIsLoading(false);
@@ -662,32 +649,13 @@ export default function ProductDetailPage() {
       <div className="mt-16">
         <h2 className="text-3xl font-bold font-headline mb-6">You May Also Like</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-          {relatedProducts.map((p) => (
-            <Card key={p.id} className="overflow-hidden group">
-              <Link href={`/products/${p.shopId}/${p.slug}`}>
-                <CardContent className="p-0">
-                  <div className="relative aspect-[4/3]">
-                    <Image
-                      src={p.imageUrl || 'https://i.postimg.cc/j283ydft/image.png'}
-                      alt={p.name}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform"
-                      data-ai-hint={p.imageHint}
-                    />
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-semibold truncate">{p.name}</h3>
-                    <p className="text-primary font-bold">KES {p.variants?.[0]?.price?.toLocaleString() || 'N/A'}</p>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                        <span>{p.rating || 'N/A'}</span>
-                        <span>({p.reviewCount || 0})</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Link>
-            </Card>
-          ))}
+          {relatedProducts.length > 0 ? (
+             relatedProducts.map((p) => <ProductCard key={p.id} product={p as any} />)
+          ) : (
+            <div className="col-span-full text-center text-muted-foreground py-8">
+                <p>No other products found in this category.</p>
+            </div>
+          )}
         </div>
       </div>
 
