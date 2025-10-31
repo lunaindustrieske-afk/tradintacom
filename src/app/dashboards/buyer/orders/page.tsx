@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Truck, CheckCircle, Clock, Eye, FileSignature, Wallet } from "lucide-react";
+import { FileText, Truck, CheckCircle, Clock, Eye, FileSignature, Wallet, Loader2 } from "lucide-react";
 import Link from 'next/link';
 import { useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, orderBy, doc, getDoc, setDoc } from 'firebase/firestore';
@@ -114,8 +114,7 @@ const PayNowButton = ({ order }: { order: Order }) => {
     );
 };
 
-
-export default function OrdersPage() {
+function OrdersPageContent() {
   const { user } = useUser();
   const firestore = useFirestore();
 
@@ -294,4 +293,13 @@ export default function OrdersPage() {
       </Tabs>
     </div>
   );
+}
+
+
+export default function OrdersPage() {
+    return (
+        <React.Suspense fallback={<div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+            <OrdersPageContent />
+        </React.Suspense>
+    )
 }

@@ -1,12 +1,13 @@
 
 'use client';
 
+import * as React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, Ticket, LifeBuoy, AlertTriangle } from "lucide-react";
+import { MessageSquare, Ticket, LifeBuoy, AlertTriangle, Loader2 } from "lucide-react";
 
 const supportTickets = [
     { id: 'TKT-001', subject: 'Payment Failed', user: 'BuyerCo', priority: 'High', status: 'Open', lastUpdate: '5m ago' },
@@ -19,7 +20,7 @@ const disputes = [
     { id: 'DSP-002', orderId: 'ORD-005', parties: 'PrintPack vs BuyerY', reason: 'Damaged goods', status: 'Awaiting User Response' },
 ];
 
-export default function SupportDashboard() {
+function SupportDashboardContent() {
     return (
         <Tabs defaultValue="tickets">
             <TabsList className="grid w-full grid-cols-3">
@@ -120,4 +121,13 @@ export default function SupportDashboard() {
             </TabsContent>
         </Tabs>
     );
+}
+
+
+export default function SupportDashboard() {
+    return (
+        <React.Suspense fallback={<div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+            <SupportDashboardContent />
+        </React.Suspense>
+    )
 }

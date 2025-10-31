@@ -2,7 +2,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { isRateLimited } from '@/lib/rate-limiter';
-import { cookies } from 'next/headers';
 
 export async function middleware(request: NextRequest) {
   // Use IP address as the default identifier for rate limiting.
@@ -12,12 +11,11 @@ export async function middleware(request: NextRequest) {
   // Check for session cookie to determine if user is logged in.
   // Note: We are NOT verifying the cookie here to avoid using firebase-admin in the Edge runtime.
   // Actual auth verification should happen in server components or API routes.
-  const sessionCookie = cookies().get('session')?.value;
+  const sessionCookie = request.cookies.get('session')?.value;
   if (sessionCookie) {
     // If a cookie exists, we can *assume* it's a user and apply a user-based rate limit.
     // The identifier for rate limiting in this case could be a hash of the cookie or still the IP.
-    // For simplicity, we'll still use the IP but apply a user-level limit. A more advanced
-    // setup could involve a different identifier derived from the session if needed.
+    // For simplicity, we'll still use the IP but apply a user-level limit.
     limitType = 'user';
   }
 
