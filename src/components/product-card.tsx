@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Star, ShieldCheck, Building, MapPin, Clock, Package, Hammer, ShoppingBag } from 'lucide-react';
+import { Star, ShieldCheck, Building, MapPin, Clock, Package, Hammer, ShoppingCart } from 'lucide-react';
 import { RequestQuoteModal } from '@/components/request-quote-modal';
 import type { Product } from '@/lib/definitions';
 
@@ -45,7 +45,7 @@ export function ProductCard({ product }: ProductCardProps) {
                     data-ai-hint={product.imageHint}
                   />
                   <div className='absolute top-2 left-2 flex flex-col gap-1'>
-                    {product.isSponsored && <Badge variant="destructive">Sponsored</Badge>}
+                    {product.isSponsored && <Badge variant="secondary" className="bg-yellow-200 text-yellow-800 border-yellow-300">Sponsored</Badge>}
                     {product.isForging && <Badge className="bg-orange-500 text-white"><Hammer className="w-3 h-3 mr-1"/> Forging Deal</Badge>}
                     {isDirect && (
                         <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-100 flex items-center gap-1">

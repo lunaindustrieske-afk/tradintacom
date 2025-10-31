@@ -188,7 +188,7 @@ export default async function HomePage() {
   const finalFeaturedProducts = [...featuredProducts, ...organicProducts];
 
   const featuredManufacturers = finalFeaturedProducts.reduce((acc, product) => {
-    if (!acc.find(m => m.id === product.manufacturerId)) {
+    if (product.manufacturerId && !acc.find(m => m.id === product.manufacturerId)) {
       acc.push({
         id: product.manufacturerId,
         slug: product.manufacturerSlug || '',
