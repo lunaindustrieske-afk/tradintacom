@@ -555,7 +555,7 @@ function BuyerDashboardContent() {
     );
 }
 
-export default function BuyerDashboard() {
+export default function BuyerDashboardPage() {
     return (
         <React.Suspense fallback={<div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
             <BuyerDashboardContent />
