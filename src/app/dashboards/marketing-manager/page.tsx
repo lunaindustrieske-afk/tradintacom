@@ -26,6 +26,7 @@ import {
   PlusCircle,
   BarChart,
   Users,
+  Loader2,
 } from "lucide-react";
 import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, collectionGroup, where } from 'firebase/firestore';
@@ -230,7 +231,7 @@ const MarketingDashboardContent = () => {
 
 export default function MarketingDashboardPage() {
     return (
-        <React.Suspense fallback={<div className="flex justify-center items-center h-64"><p>Loading...</p></div>}>
+        <React.Suspense fallback={<div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
             <MarketingDashboardContent />
         </React.Suspense>
     )
