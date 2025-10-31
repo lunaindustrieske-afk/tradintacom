@@ -26,6 +26,7 @@ export type ProductWithRanking = Product & {
     isVerified?: boolean;
     shopId?: string;
     slug: string;
+    isSponsored?: boolean;
     // Ensure timestamps are strings for client components
     createdAt?: string; 
     updatedAt?: string;
@@ -73,13 +74,19 @@ export async function getRankedProducts(userId: string | null, searchQuery?: str
         }
 
         let tradRank = 0;
+        let isSponsored = false;
+
 
         // === STAGE 3: Scoring Engine ===
 
         // a) Sponsorship & Promotion Score
         const marketingPlan = await SellerService.getActiveMarketingPlan(seller.id);
         if (marketingPlan) {
-            tradRank += SCORE_WEIGHTS.SPONSORSHIP;
+            // Check if the plan includes a general product promotion feature
+            if(marketingPlan.features?.includes('product:search_priority') || marketingPlan.features?.includes('product:homepage_rotation')) {
+                tradRank += SCORE_WEIGHTS.SPONSORSHIP;
+                isSponsored = true;
+            }
         }
 
         // b) Quality & Trust Score
@@ -122,6 +129,7 @@ export async function getRankedProducts(userId: string | null, searchQuery?: str
         rankedProducts.push({
             ...(sanitizedProduct as Product),
             tradRank,
+            isSponsored,
             manufacturerName: seller.shopName,
             manufacturerLocation: seller.location,
             isVerified: seller.verificationStatus === 'Verified',

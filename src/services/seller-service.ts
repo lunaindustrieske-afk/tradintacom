@@ -12,6 +12,12 @@ import type { Manufacturer } from '@/lib/definitions';
 
 const db = getDb();
 
+type MarketingPlan = {
+    id: string;
+    name: string;
+    features: string[];
+}
+
 /**
  * Fetches a single manufacturer's profile by their user ID.
  * @param sellerId The Firebase UID of the manufacturer.
@@ -68,19 +74,26 @@ export async function getSellersByIds(sellerIds: string[]): Promise<Map<string, 
 
 /**
  * Fetches the active marketing plan for a given seller.
- * This would be used to determine sponsorship levels.
  * @param sellerId The Firebase UID of the manufacturer.
  * @returns The marketing plan data or null.
  */
-export async function getActiveMarketingPlan(sellerId: string): Promise<any | null> {
-    // This is a placeholder. In a real system, this would query a 'subscriptions'
-    // collection to find the active plan for the seller.
-    // e.g., const subRef = db.collection('subscriptions').where('sellerId', '==', sellerId).where('status', '==', 'active');
-    
-    // For now, we return a mock plan for demonstration.
-    if (sellerId === 'mfg-1') {
-        return { planId: 'surge', name: 'Tradinta Surge', features: ['product:search_priority'] };
+export async function getActiveMarketingPlan(sellerId: string): Promise<MarketingPlan | null> {
+    try {
+        const sellerDoc = await db.collection('manufacturers').doc(sellerId).get();
+        if (!sellerDoc.exists) return null;
+
+        const sellerData = sellerDoc.data() as Manufacturer;
+        const planId = sellerData.marketingPlanId;
+
+        if (!planId) return null;
+        
+        const planDoc = await db.collection('marketingPlans').doc(planId).get();
+        if (!planDoc.exists) return null;
+
+        return planDoc.data() as MarketingPlan;
+
+    } catch (error) {
+        console.error(`Error fetching active marketing plan for seller ${sellerId}:`, error);
+        return null;
     }
-    
-    return null;
 }

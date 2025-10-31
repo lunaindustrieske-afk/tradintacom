@@ -102,6 +102,10 @@
         "theme": {
             "type": "string",
             "description": "Identifier for the selected shop theme (e.g., 'tradinta-blue', 'forest-green')."
+        },
+        "marketingPlanId": {
+            "type": "string",
+            "description": "The ID of the active marketing plan this seller is subscribed to."
         }
       },
       "required": [
@@ -231,6 +235,10 @@
         },
         "reviewCount": {
             "type": "number"
+        },
+        "marketingPlanId": {
+            "type": "string",
+            "description": "Overrides the seller's plan for this specific product."
         }
       },
       "required": [
@@ -1133,5 +1141,3 @@
     ]
   }
 }
-
-    
