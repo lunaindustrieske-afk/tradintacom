@@ -28,6 +28,7 @@ import {
   BarChart,
   Users,
   Loader2,
+  Mail,
 } from "lucide-react";
 import { useFirestore, useCollection, useMemoFirebase, useDoc, setDocumentNonBlocking } from '@/firebase';
 import { collection, query, collectionGroup, where } from 'firebase/firestore';
@@ -36,6 +37,7 @@ import Link from 'next/link';
 import type { Campaign, UserProfile } from '@/app/lib/definitions';
 import GrowthTiersTab from '@/components/marketing/GrowthTiersTab';
 import AdSlotManagementTab from '@/components/marketing/AdSlotManagementTab';
+import NewsletterAssistantTab from '@/components/marketing/NewsletterAssistantTab';
 
 
 const MarketingDashboardContent = () => {
@@ -127,6 +129,7 @@ const MarketingDashboardContent = () => {
     const navLinks = [
         { id: 'growth-tiers', label: 'Growth Tiers' },
         { id: 'ad-slots', label: 'Ad Slot Management' },
+        { id: 'newsletter', label: 'Newsletter Assistant' },
         { id: 'partner-campaigns', label: 'Partner Campaigns' },
         { id: 'manufacturer-campaigns', label: 'Manufacturer Campaigns' },
         { id: 'ambassadors', label: 'Growth Partner Network' },
@@ -137,6 +140,8 @@ const MarketingDashboardContent = () => {
         switch (activeTab) {
             case 'ad-slots':
                 return <AdSlotManagementTab />;
+            case 'newsletter':
+                return <NewsletterAssistantTab />;
             case 'partner-campaigns':
                 return (
                     <Card>
