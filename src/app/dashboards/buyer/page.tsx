@@ -412,8 +412,7 @@ const MyPledges = () => {
     )
 }
 
-
-export default function BuyerDashboard() {
+function BuyerDashboardContent() {
     const { user, role } = useUser();
     const { toast } = useToast();
     const [copied, setCopied] = React.useState(false);
@@ -554,4 +553,12 @@ export default function BuyerDashboard() {
             </div>
         </div>
     );
+}
+
+export default function BuyerDashboard() {
+    return (
+        <React.Suspense fallback={<div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+            <BuyerDashboardContent />
+        </React.Suspense>
+    )
 }
