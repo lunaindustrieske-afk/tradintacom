@@ -150,8 +150,8 @@ const HeroCarousel = async () => {
        return (
           <div className="relative w-full h-full">
             <Image
-              src="https://picsum.photos/seed/hero-fallback/1600/600"
-              alt="Tradinta Marketplace"
+              src="https://i.postimg.cc/xCdXsyMj/tradinta-marketting.jpg"
+              alt="Tradinta Commerce"
               fill
               className="object-cover"
               data-ai-hint="industrial warehouse"
@@ -191,8 +191,8 @@ const HeroCarousel = async () => {
            <CarouselItem>
                 <div className="relative w-full h-full">
                     <Image
-                        src="https://picsum.photos/seed/hero-main/1600/600"
-                        alt="Tradinta Marketplace"
+                        src="https://i.postimg.cc/xCdXsyMj/tradinta-marketting.jpg"
+                        alt="Tradinta Commerce"
                         fill
                         className="object-cover"
                         data-ai-hint="digital trade network"
@@ -263,7 +263,7 @@ export default async function HomePage() {
                                     />
                                 </div>
                                 <div className="p-3 w-full">
-                                    <p className="font-semibold text-sm truncate">{category.name}</p>
+                                    <p className="font-semibold text-sm leading-tight whitespace-normal">{category.name}</p>
                                 </div>
                             </CardContent>
                         </Card>
@@ -439,5 +439,3 @@ export default async function HomePage() {
     </>
   );
 }
-
-    
