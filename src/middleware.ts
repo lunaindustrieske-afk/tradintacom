@@ -1,14 +1,36 @@
+
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { isRateLimited } from '@/lib/rate-limiter';
+import { customInitApp } from '@/firebase/admin';
+import { getAuth } from 'firebase-admin/auth';
+import { cookies } from 'next/headers';
 
-export function middleware(request: NextRequest) {
-  // Get the IP address from the request.
-  // 'x-forwarded-for' is important for environments behind a proxy (like Vercel/App Hosting).
-  const ip = request.ip || request.headers.get('x-forwarded-for') || '127.0.0.1';
+export async function middleware(request: NextRequest) {
+  // Initialize Firebase Admin for server-side auth checks
+  customInitApp();
+  
+  // Default to IP address for rate limiting
+  let identifier = request.ip || request.headers.get('x-forwarded-for') || '127.0.0.1';
+  let limitType: 'ip' | 'user' = 'ip';
 
-  // Check if the IP is rate-limited.
-  if (isRateLimited(ip)) {
+  // Check for session cookie
+  const sessionCookie = cookies().get('session')?.value;
+  if (sessionCookie) {
+    try {
+      // Verify the session cookie to get the user's UID
+      const decodedClaims = await getAuth().verifySessionCookie(sessionCookie, true);
+      identifier = decodedClaims.uid;
+      limitType = 'user';
+    } catch (error) {
+      // Cookie is invalid or expired. User is treated as anonymous.
+      // The identifier remains the IP address.
+      console.log('Middleware: Invalid session cookie found.');
+    }
+  }
+
+  // Check if the identifier is rate-limited.
+  if (isRateLimited(identifier, limitType)) {
     // If rate-limited, return a 429 response.
     return new NextResponse('Too Many Requests', { status: 429 });
   }

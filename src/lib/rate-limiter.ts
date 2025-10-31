@@ -1,3 +1,4 @@
+
 'use server';
 
 // A simple in-memory store for rate limiting.
@@ -5,24 +6,36 @@
 // solution like Redis, Memcached, or a dedicated Firestore collection.
 const requestCounts = new Map<string, { count: number; expiry: number }>();
 
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 100; // Max 100 requests per minute per identifier
+const RATE_LIMITS = {
+  ip: {
+    windowMs: 60 * 1000, // 1 minute
+    maxRequests: 60,
+  },
+  user: {
+    windowMs: 60 * 1000, // 1 minute
+    maxRequests: 200,
+  },
+};
+
+type RateLimitType = keyof typeof RATE_LIMITS;
 
 /**
  * Checks if a request from a given identifier should be allowed.
- * 
+ *
  * @param identifier A unique string representing the source (e.g., IP address, user ID).
+ * @param type The type of identifier, used to apply the correct limit.
  * @returns True if the request is within the limit, false otherwise.
  */
-export function isRateLimited(identifier: string): boolean {
+export function isRateLimited(identifier: string, type: RateLimitType): boolean {
   const now = Date.now();
+  const limitConfig = RATE_LIMITS[type];
   const record = requestCounts.get(identifier);
 
   // If no record exists or the record has expired, create a new one.
   if (!record || record.expiry < now) {
     requestCounts.set(identifier, {
       count: 1,
-      expiry: now + RATE_LIMIT_WINDOW_MS,
+      expiry: now + limitConfig.windowMs,
     });
     return false; // Not limited
   }
@@ -35,10 +48,10 @@ export function isRateLimited(identifier: string): boolean {
   if (Math.random() < 0.01) { // 1% chance to clean up on any given request
     cleanupExpired();
   }
-  
+
   // Check if the count exceeds the maximum allowed requests.
-  if (record.count > MAX_REQUESTS_PER_WINDOW) {
-    console.warn(`Rate limit exceeded for identifier: ${identifier}`);
+  if (record.count > limitConfig.maxRequests) {
+    console.warn(`Rate limit exceeded for ${type}: ${identifier}`);
     return true; // Limited
   }
 
