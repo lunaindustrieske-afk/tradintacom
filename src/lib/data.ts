@@ -118,3 +118,10 @@ export async function getBrandingLogos(): Promise<BrandingLogos> {
         return {};
     }
 }
+
+// This function is now DEPRECATED as all product fetching should go through the DiscoveryEngine.
+// It is kept for reference but should not be used in new code.
+export async function getAllProducts(): Promise<any[]> {
+    console.warn("DEPRECATED: getAllProducts in lib/data.ts should not be used. Use services/DiscoveryEngine instead.");
+    return [];
+}

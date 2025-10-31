@@ -41,6 +41,7 @@ import { FilterSidebar } from '@/components/products/filter-sidebar';
 import { CategoryScroller } from '@/components/products/category-scroller';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
+import { getHomepageBanners } from '@/app/lib/data';
 
 
 type ProductWithShopId = Product & {
@@ -55,6 +56,7 @@ type ProductWithShopId = Product & {
   isSponsored?: boolean;
   isForging?: boolean;
   listOnTradintaDirect?: boolean;
+  imageHint?: string;
 };
 
 type PlatformSettings = {
@@ -80,12 +82,21 @@ export function ProductsPageClient({
     useState<ProductWithShopId[]>(initialProducts);
   const [isLoading, setIsLoading] = useState(!initialProducts.length);
   const [followedSellerIds, setFollowedSellerIds] = useState<string[]>([]);
+  const [promoSlides, setPromoSlides] = React.useState<any[]>([]);
   
   const activeTab = searchParams.get('tab') || 'for-you';
   
   const platformSettingsRef = useMemoFirebase(() => firestore ? doc(firestore, 'platformSettings', 'config') : null, [firestore]);
   const { data: platformSettings, isLoading: isLoadingSettings } = useDoc<PlatformSettings>(platformSettingsRef);
   const isDirectEnabled = platformSettings?.enableTradintaDirect ?? true;
+
+  useEffect(() => {
+    const fetchBanners = async () => {
+      const banners = await getHomepageBanners();
+      setPromoSlides(banners.map(b => ({ ...b, description: b.subtitle })));
+    };
+    fetchBanners();
+  }, []);
   
   const createQueryString = React.useCallback(
     (paramsToUpdate: Record<string, string | undefined>) => {
@@ -193,12 +204,11 @@ export function ProductsPageClient({
     router.push(`${pathname}?${newParams.toString()}`);
   }
 
-  const { filteredProducts, promoSlides, totalPages } =
+  const { filteredProducts, totalPages } =
     useMemo(() => {
       if (!allProducts)
         return {
           filteredProducts: [],
-          promoSlides: [],
           totalPages: 0,
         };
 
@@ -242,25 +252,11 @@ export function ProductsPageClient({
 
         return matchesCategory && matchesSearch && matchesVerification && matchesMinPrice && matchesMaxPrice && matchesCounty && matchesMoq && matchesRating && matchesTab;
       });
-
-      const dynamicPromoSlides = allProducts
-        .slice(0, 5)
-        .map((p) => ({
-          id: p.id,
-          title: p.name,
-          description: p.description,
-          imageUrl:
-            p.imageUrl ||
-            'https://picsum.photos/seed/promo-fallback/1600/900',
-          imageHint: p.imageHint,
-          link: `/products/${p.shopId}/${p.slug}`,
-        }));
         
       const totalPages = Math.ceil(products.length / PRODUCTS_PER_PAGE);
 
       return {
         filteredProducts: products,
-        promoSlides: dynamicPromoSlides,
         totalPages,
       };
     }, [allProducts, filters, searchQuery, activeTab, followedSellerIds]);

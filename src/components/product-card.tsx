@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Image from 'next/image';
@@ -22,6 +23,7 @@ type ProductWithShopId = Product & {
   isSponsored?: boolean;
   isForging?: boolean;
   listOnTradintaDirect?: boolean;
+  imageHint?: string;
 };
 
 interface ProductCardProps {

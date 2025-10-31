@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import * as React from 'react';
@@ -15,6 +16,7 @@ import type { Product } from '@/lib/definitions';
 import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { ProductCard } from '@/components/product-card';
 
 type OrderItem = {
     productId: string;
@@ -150,28 +152,7 @@ export default function OrderConfirmationPage() {
                         Array.from({length: 4}).map((_, i) => <Skeleton key={i} className="h-80" />)
                     ) : sponsoredProducts.length > 0 ? (
                         sponsoredProducts.map(product => (
-                             <Card key={product.id} className="overflow-hidden group">
-                                <Link href={`/products/${product.shopId}/${product.slug}`}>
-                                <CardContent className="p-0">
-                                    <div className="relative aspect-[4/3] overflow-hidden">
-                                    <Image
-                                        src={product.imageUrl || 'https://i.postimg.cc/j283ydft/image.png'}
-                                        alt={product.name}
-                                        fill
-                                        className="object-cover group-hover:scale-105 transition-transform"
-                                        data-ai-hint={product.imageHint}
-                                    />
-                                    <Badge variant="destructive" className="absolute top-2 left-2">Sponsored</Badge>
-                                    </div>
-                                    <div className="p-4">
-                                    <CardTitle className="text-lg mb-1 truncate">{product.name}</CardTitle>
-                                    <CardDescription className="text-base font-bold text-primary">
-                                        KES {(product.variants?.[0]?.price || 0).toLocaleString()}
-                                    </CardDescription>
-                                    </div>
-                                </CardContent>
-                                </Link>
-                            </Card>
+                             <ProductCard key={product.id} product={product} />
                         ))
                     ) : (
                         <p className="col-span-full text-center text-muted-foreground">No sponsored products to show right now.</p>

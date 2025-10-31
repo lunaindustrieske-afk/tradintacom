@@ -30,10 +30,11 @@ import {
 } from '@/components/ui/carousel';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getHomepageBanners, getAllBlogPosts } from '@/app/lib/data';
-import type { Product } from '@/lib/definitions';
+import type { Product, Manufacturer } from '@/lib/definitions';
 import { getRankedProducts } from '@/services/DiscoveryEngine';
 import { categories as allCategories } from '@/app/lib/categories';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { ProductCard } from '@/components/product-card';
 
 
 type HomepageBanner = {
@@ -50,7 +51,7 @@ type BlogPost = {
   slug: string;
 };
 
-type ProductWithShopId = Product & { shopId: string; slug: string; variants: { price: number }[], isSponsored?: boolean };
+type ProductWithShopId = Product & { shopId: string; slug: string; variants: { price: number }[], isSponsored?: boolean, manufacturerName?: string; };
 
 const valueHighlights = [
   {
@@ -77,41 +78,6 @@ const valueHighlights = [
     icon: <Coins className="h-10 w-10 text-primary" />,
     title: 'Powered by TradCoin',
     description: 'Earn rewards and incentives on every transaction.',
-  },
-];
-
-const featuredManufacturers = [
-  {
-    id: 'mfg-1',
-    shopId: 'const-ltd',
-    slug: 'constructa-ltd',
-    name: 'Constructa Ltd',
-    industry: 'Building Materials',
-    logo: 'https://picsum.photos/seed/mfg1/48/48',
-  },
-  {
-    id: 'mfg-2',
-    shopId: 'super-bake',
-    slug: 'superbake-bakery',
-    name: 'SuperBake Bakery',
-    industry: 'Food & Beverage',
-    logo: 'https://picsum.photos/seed/mfg2/48/48',
-  },
-  {
-    id: 'mfg-3',
-    shopId: 'plastico-ke',
-    slug: 'plastico-kenya',
-    name: 'PlastiCo Kenya',
-    industry: 'Plastics & Polymers',
-    logo: 'https://picsum.photos/seed/mfg3/48/48',
-  },
-  {
-    id: 'mfg-4',
-    shopId: 'print-pack',
-    slug: 'printpack-solutions',
-    name: 'PrintPack Solutions',
-    industry: 'Packaging',
-    logo: 'https://picsum.photos/seed/mfg4/48/48',
   },
 ];
 
@@ -217,7 +183,22 @@ export default async function HomePage() {
   const blogPosts = await getAllBlogPosts();
   const recentBlogPosts = blogPosts.slice(0, 3);
   const allProducts = (await getRankedProducts(null)) as ProductWithShopId[];
-  const featuredProducts = allProducts.slice(0, 4);
+  const featuredProducts = allProducts.filter(p => p.isSponsored).slice(0, 4);
+  const organicProducts = allProducts.filter(p => !p.isSponsored).slice(0, 4 - featuredProducts.length);
+  const finalFeaturedProducts = [...featuredProducts, ...organicProducts];
+
+  const featuredManufacturers = finalFeaturedProducts.reduce((acc, product) => {
+    if (!acc.find(m => m.id === product.manufacturerId)) {
+      acc.push({
+        id: product.manufacturerId,
+        slug: product.manufacturerSlug || '',
+        name: product.manufacturerName || 'Tradinta Seller',
+        industry: product.category,
+        logo: 'https://picsum.photos/seed/mfg-placeholder/48/48',
+      });
+    }
+    return acc;
+  }, [] as { id: string; slug: string; name: string; industry: string; logo: string; }[]).slice(0, 4);
 
 
   return (
@@ -283,36 +264,9 @@ export default async function HomePage() {
               </Button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {featuredProducts.map((product) => {
-                const price = product.variants?.[0]?.price;
-                return (
-                  <Card key={product.id} className="overflow-hidden group">
-                     <Link href={`/products/${product.shopId}/${product.slug}`}>
-                      <CardContent className="p-0">
-                        <div className="relative aspect-[4/3] overflow-hidden">
-                          <Image
-                            src={product.imageUrl || 'https://i.postimg.cc/j283ydft/image.png'}
-                            alt={product.name}
-                            fill
-                            className="object-cover group-hover:scale-105 transition-transform"
-                            data-ai-hint={product.imageHint}
-                          />
-                          {product.isSponsored && <Badge variant="destructive" className="absolute top-2 left-2">Sponsored</Badge>}
-                          {product.isVerified && !product.isSponsored && <Badge variant="secondary" className="absolute top-2 left-2">Verified Factory</Badge>}
-                        </div>
-                        <div className="p-4">
-                          <CardTitle className="text-lg mb-1 truncate">
-                            {product.name}
-                          </CardTitle>
-                          <CardDescription className="text-base font-bold text-primary">
-                            {price !== undefined && price !== null ? `KES ${price.toLocaleString()}` : 'Inquire for Price'}
-                          </CardDescription>
-                        </div>
-                      </CardContent>
-                    </Link>
-                  </Card>
-                )
-              })}
+              {finalFeaturedProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
             </div>
           </section>
 
