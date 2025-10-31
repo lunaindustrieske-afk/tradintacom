@@ -2,31 +2,23 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { isRateLimited } from '@/lib/rate-limiter';
-import { customInitApp } from '@/firebase/admin';
-import { getAuth } from 'firebase-admin/auth';
 import { cookies } from 'next/headers';
 
 export async function middleware(request: NextRequest) {
-  // Initialize Firebase Admin for server-side auth checks
-  customInitApp();
-  
-  // Default to IP address for rate limiting
-  let identifier = request.ip || request.headers.get('x-forwarded-for') || '127.0.0.1';
+  // Use IP address as the default identifier for rate limiting.
+  const identifier = request.ip || request.headers.get('x-forwarded-for') || '127.0.0.1';
   let limitType: 'ip' | 'user' = 'ip';
 
-  // Check for session cookie
+  // Check for session cookie to determine if user is logged in.
+  // Note: We are NOT verifying the cookie here to avoid using firebase-admin in the Edge runtime.
+  // Actual auth verification should happen in server components or API routes.
   const sessionCookie = cookies().get('session')?.value;
   if (sessionCookie) {
-    try {
-      // Verify the session cookie to get the user's UID
-      const decodedClaims = await getAuth().verifySessionCookie(sessionCookie, true);
-      identifier = decodedClaims.uid;
-      limitType = 'user';
-    } catch (error) {
-      // Cookie is invalid or expired. User is treated as anonymous.
-      // The identifier remains the IP address.
-      console.log('Middleware: Invalid session cookie found.');
-    }
+    // If a cookie exists, we can *assume* it's a user and apply a user-based rate limit.
+    // The identifier for rate limiting in this case could be a hash of the cookie or still the IP.
+    // For simplicity, we'll still use the IP but apply a user-level limit. A more advanced
+    // setup could involve a different identifier derived from the session if needed.
+    limitType = 'user';
   }
 
   // Check if the identifier is rate-limited.
