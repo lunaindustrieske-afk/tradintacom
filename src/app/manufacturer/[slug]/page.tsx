@@ -43,7 +43,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { FollowButton } from '@/components/follow-button';
-import '@/app/themes.css';
 import { cn } from '@/lib/utils';
 
 export default function ManufacturerPage() {
