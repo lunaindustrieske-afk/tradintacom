@@ -65,7 +65,7 @@ const ConversationListSkeleton = () => (
     </div>
 );
 
-export default function MessagesPage() {
+function MessagesPageContent() {
     const { user } = useUser();
     const firestore = useFirestore();
 
@@ -218,5 +218,13 @@ export default function MessagesPage() {
                 </div>
             </div>
         </div>
+    )
+}
+
+export default function MessagesPage() {
+    return (
+        <React.Suspense fallback={<div className="flex justify-center items-center h-64"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+            <MessagesPageContent />
+        </React.Suspense>
     )
 }
