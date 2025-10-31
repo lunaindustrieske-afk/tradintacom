@@ -29,12 +29,13 @@ import {
   Users,
   Loader2,
 } from "lucide-react";
-import { useFirestore, useCollection, useMemoFirebase } from '@/firebase';
+import { useFirestore, useCollection, useMemoFirebase, useDoc, setDocumentNonBlocking } from '@/firebase';
 import { collection, query, collectionGroup, where } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import type { Campaign, UserProfile } from '@/app/lib/definitions';
 import GrowthTiersTab from '@/components/marketing/GrowthTiersTab';
+import AdSlotManagementTab from '@/components/marketing/AdSlotManagementTab';
 
 
 const MarketingDashboardContent = () => {
@@ -125,6 +126,7 @@ const MarketingDashboardContent = () => {
     
     const navLinks = [
         { id: 'growth-tiers', label: 'Growth Tiers' },
+        { id: 'ad-slots', label: 'Ad Slot Management' },
         { id: 'partner-campaigns', label: 'Partner Campaigns' },
         { id: 'manufacturer-campaigns', label: 'Manufacturer Campaigns' },
         { id: 'ambassadors', label: 'Growth Partner Network' },
@@ -133,6 +135,8 @@ const MarketingDashboardContent = () => {
     
     const renderContent = () => {
         switch (activeTab) {
+            case 'ad-slots':
+                return <AdSlotManagementTab />;
             case 'partner-campaigns':
                 return (
                     <Card>
@@ -237,5 +241,3 @@ export default function MarketingDashboardPage() {
         </React.Suspense>
     )
 }
-
-    

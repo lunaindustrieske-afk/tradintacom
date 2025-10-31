@@ -12,7 +12,6 @@ const db = getFirestore();
 
 const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
 
-
 // Helper to find partner campaign and calculate commission
 async function getCommissionDetails(partnerId: string, sellerId: string): Promise<{ commissionRate: number; campaignId: string | null }> {
     // For now, using a default commission.
@@ -22,7 +21,6 @@ async function getCommissionDetails(partnerId: string, sellerId: string): Promis
     return { commissionRate: defaultCommissionRate, campaignId: 'default-campaign' };
 }
 
-
 export async function POST(request: NextRequest) {
   if (!PAYSTACK_SECRET_KEY) {
     console.error('Paystack secret key is not configured.');
@@ -31,8 +29,37 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { reference, orderId } = body;
+    const { reference, orderId, planId, durationInMonths = 1 } = body;
 
+    // --- Subscription Logic ---
+    if (planId && reference) {
+      const paystackResponse = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
+        headers: { Authorization: `Bearer ${PAYSTACK_SECRET_KEY}` },
+      });
+      const data = await paystackResponse.json();
+
+      if (!paystackResponse.ok || !data.status || data.data.status !== 'success') {
+          return NextResponse.json({ error: 'Payment verification failed.', details: data.message }, { status: 400 });
+      }
+
+      const userId = data.data.metadata.userId;
+      if (!userId) {
+          return NextResponse.json({ error: 'User ID missing from payment metadata.' }, { status: 400 });
+      }
+
+      const sellerRef = db.collection('manufacturers').doc(userId);
+      const expiresAt = new Date();
+      expiresAt.setMonth(expiresAt.getMonth() + durationInMonths);
+
+      await sellerRef.update({
+          marketingPlanId: planId,
+          planExpiresAt: Timestamp.fromDate(expiresAt)
+      });
+      
+      return NextResponse.json({ success: true, message: 'Subscription activated successfully.' });
+    }
+
+    // --- Order Payment Logic ---
     if (!reference || !orderId) {
       return NextResponse.json({ error: 'Missing required payment information.' }, { status: 400 });
     }
@@ -101,7 +128,9 @@ export async function POST(request: NextRequest) {
     
     const buyerPointsPer10Kes = pointsConfig.buyerPurchasePointsPer10 || 1;
     const buyerPoints = Math.floor((orderAmount / 10) * buyerPointsPer10Kes);
-    await awardPoints(db, buyerId, buyerPoints, 'PURCHASE_COMPLETE', { orderId });
+    if (buyerPoints > 0) {
+        await awardPoints(db, buyerId, buyerPoints, 'PURCHASE_COMPLETE', { orderId });
+    }
     
     // For Tradinta Direct, points go to Tradinta's "house" account, or we can skip seller points
     // For B2B orders, find the seller and award them points.
@@ -118,8 +147,10 @@ export async function POST(request: NextRequest) {
         if (isSellerVerified && pointsConfig.globalSellerPointMultiplier && pointsConfig.globalSellerPointMultiplier > 1) {
             sellerPoints *= pointsConfig.globalSellerPointMultiplier;
         }
-
-        await awardPoints(db, sellerId, sellerPoints, 'SALE_COMPLETE', { orderId, buyerId });
+        
+        if (sellerPoints > 0) {
+            await awardPoints(db, sellerId, sellerPoints, 'SALE_COMPLETE', { orderId, buyerId });
+        }
     }
     
     // ---- START: Sales Attribution Logic ----

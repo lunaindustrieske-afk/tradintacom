@@ -57,21 +57,42 @@ const PayButton = ({ plan }: { plan: MarketingPlan }) => {
 
     const initializePayment = usePaystackPayment(config);
 
-    const onSuccess = (transaction: any) => {
-        // TODO: In a real app, you would call a server-side function here
-        // to verify the transaction with Paystack's API and securely update
-        // the user's subscription status in Firestore.
-        console.log('Paystack success:', transaction);
-        toast({
-            title: "Payment Successful!",
-            description: `You have subscribed to the ${plan.name} plan.`,
-        });
-        // Redirect to a success page or dashboard
-        router.push('/dashboards/seller-centre/marketing');
+    const onSuccess = async (transaction: any) => {
+        toast({ title: "Payment Successful!", description: "Verifying and activating your subscription..."});
+        
+        try {
+            const response = await fetch('/api/paystack/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    reference: transaction.reference,
+                    planId: plan.id,
+                })
+            });
+
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.details || 'Subscription activation failed on the server.');
+            }
+            
+            toast({
+                title: "Subscription Activated!",
+                description: `You have successfully subscribed to the ${plan.name} plan.`,
+            });
+            router.push('/dashboards/seller-centre/marketing');
+
+        } catch (error: any) {
+             toast({
+                title: "Subscription Activation Failed",
+                description: `Your payment was successful, but we couldn't activate your subscription. Please contact support with transaction reference: ${transaction.reference}. Error: ${error.message}`,
+                variant: 'destructive',
+                duration: 10000,
+            });
+        }
     };
 
     const onClose = () => {
-        // User closed the popup
         toast({
             title: "Payment Cancelled",
             description: "You have not been charged.",

@@ -106,6 +106,11 @@
         "marketingPlanId": {
             "type": "string",
             "description": "The ID of the active marketing plan this seller is subscribed to."
+        },
+        "planExpiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The timestamp when the current marketing plan expires."
         }
       },
       "required": [
@@ -868,6 +873,22 @@
         "logisticsPartner": { "type": "string" }
       },
       "required": ["id", "orderId", "buyerId", "shippingAddress", "status", "items", "createdAt"]
+    },
+    "AdSlot": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AdSlot",
+      "type": "object",
+      "description": "Represents a manual override for a specific promotional placement on the site.",
+      "properties": {
+        "id": { "type": "string", "description": "Unique ID for the slot (e.g., 'homepage-product-1')." },
+        "name": { "type": "string", "description": "Human-readable name (e.g., 'Homepage Featured Product Slot 1')." },
+        "type": { "type": "string", "enum": ["product", "manufacturer"], "description": "The type of entity this slot features." },
+        "pinnedEntityId": { "type": "string", "description": "The ID of the Product or Manufacturer to feature." },
+        "expiresAt": { "type": "string", "format": "date-time", "description": "Optional expiration for the manual override." },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "updatedBy": { "type": "string", "description": "UID of the admin who last updated it." }
+      },
+      "required": ["id", "name", "type"]
     }
   },
   "auth": {
@@ -1120,6 +1141,14 @@
                 "$ref": "#/backend/entities/MarketingPlan"
             },
             "description": "Stores details and pricing for marketing plans."
+        }
+      },
+      {
+        "path": "/adSlots/{slotId}",
+        "definition": {
+          "entityName": "AdSlot",
+          "schema": { "$ref": "#/backend/entities/AdSlot" },
+          "description": "Manual override for a promotional placement."
         }
       },
       {

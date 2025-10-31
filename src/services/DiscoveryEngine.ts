@@ -35,6 +35,7 @@ export type ProductWithRanking = Product & {
 // --- Scoring Weights ---
 // These values can be tuned to adjust the ranking algorithm's behavior.
 const SCORE_WEIGHTS = {
+    MANUAL_OVERRIDE: 20000,      // Highest boost for manually pinned items.
     SPONSORSHIP: 10000,         // Paid boost for having an active marketing plan.
     VERIFIED_SELLER: 500,       // Boost for being a trusted, verified manufacturer.
     RATING: 50,                 // Points per star rating (e.g., 4.8 stars = 240 points).
@@ -55,11 +56,12 @@ const SCORE_WEIGHTS = {
  */
 export async function getRankedProducts(userId: string | null, searchQuery?: string): Promise<ProductWithRanking[]> {
     // === STAGE 1: Data Ingestion (Parallel Fetching) ===
-    const [allProducts, allSellers, followedSellerIds, wishlistedProductIds] = await Promise.all([
+    const [allProducts, allSellers, followedSellerIds, wishlistedProductIds, adSlots] = await Promise.all([
         ProductService.getAllProducts(),
         SellerService.getSellersByIds([]), // Fetching all for now, would be optimized
         userId ? InteractionService.getFollowedSellerIds(userId) : [],
-        userId ? InteractionService.getWishlistedProductIds(userId) : []
+        userId ? InteractionService.getWishlistedProductIds(userId) : [],
+        SellerService.getAdSlots(), // Fetch manual overrides
     ]);
 
     const rankedProducts: ProductWithRanking[] = [];
@@ -72,14 +74,23 @@ export async function getRankedProducts(userId: string | null, searchQuery?: str
         if (seller.suspensionDetails?.isSuspended) {
             continue; // Skip all products from suspended sellers.
         }
+        
+        // Check for manual overrides for product slots
+        const manualProductOverride = adSlots.find(slot => slot.type === 'product' && slot.pinnedEntityId === product.id);
 
         let tradRank = 0;
         let isSponsored = false;
 
 
         // === STAGE 3: Scoring Engine ===
+        
+        // a) Manual Override Score (highest priority)
+        if (manualProductOverride) {
+            tradRank += SCORE_WEIGHTS.MANUAL_OVERRIDE;
+            isSponsored = true;
+        }
 
-        // a) Sponsorship & Promotion Score
+        // b) Sponsorship & Promotion Score
         const marketingPlan = await SellerService.getActiveMarketingPlan(seller.id);
         if (marketingPlan) {
             // Check if the plan includes a general product promotion feature
@@ -89,14 +100,14 @@ export async function getRankedProducts(userId: string | null, searchQuery?: str
             }
         }
 
-        // b) Quality & Trust Score
+        // c) Quality & Trust Score
         if (seller.verificationStatus === 'Verified') {
             tradRank += SCORE_WEIGHTS.VERIFIED_SELLER;
         }
         tradRank += (product.rating || 0) * SCORE_WEIGHTS.RATING;
         tradRank += (product.reviewCount || 0) * SCORE_WEIGHTS.REVIEW_COUNT;
 
-        // c) "Shadow Ban" & Demotion Score
+        // d) "Shadow Ban" & Demotion Score
         const moderationStatus = await ModerationService.getProductModerationStatus(product.id);
         if (moderationStatus.isDemoted) {
             tradRank += SCORE_WEIGHTS.SHADOW_BAN_PENALTY;

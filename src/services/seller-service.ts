@@ -9,6 +9,7 @@
 
 import { getDb } from '@/lib/firebase-admin';
 import type { Manufacturer } from '@/lib/definitions';
+import { Timestamp } from 'firebase-admin/firestore';
 
 const db = getDb();
 
@@ -17,6 +18,14 @@ type MarketingPlan = {
     name: string;
     features: string[];
 }
+
+type AdSlot = {
+    id: string;
+    type: 'product' | 'manufacturer';
+    pinnedEntityId: string;
+    expiresAt?: Timestamp;
+};
+
 
 /**
  * Fetches a single manufacturer's profile by their user ID.
@@ -84,8 +93,14 @@ export async function getActiveMarketingPlan(sellerId: string): Promise<Marketin
 
         const sellerData = sellerDoc.data() as Manufacturer;
         const planId = sellerData.marketingPlanId;
+        const planExpiresAt = sellerData.planExpiresAt as Timestamp | undefined;
 
         if (!planId) return null;
+        
+        // Check if the plan has expired
+        if (planExpiresAt && planExpiresAt.toDate() < new Date()) {
+            return null;
+        }
         
         const planDoc = await db.collection('marketingPlans').doc(planId).get();
         if (!planDoc.exists) return null;
@@ -95,5 +110,27 @@ export async function getActiveMarketingPlan(sellerId: string): Promise<Marketin
     } catch (error) {
         console.error(`Error fetching active marketing plan for seller ${sellerId}:`, error);
         return null;
+    }
+}
+
+
+/**
+ * Fetches all manual ad slot overrides from Firestore.
+ * @returns An array of AdSlot objects.
+ */
+export async function getAdSlots(): Promise<AdSlot[]> {
+    try {
+        const snapshot = await db.collection('adSlots').get();
+        if (snapshot.empty) {
+            return [];
+        }
+        const now = new Date();
+        // Filter out expired slots
+        return snapshot.docs
+            .map(doc => ({ id: doc.id, ...doc.data() } as AdSlot))
+            .filter(slot => !slot.expiresAt || slot.expiresAt.toDate() > now);
+    } catch (error) {
+        console.error("Error fetching ad slots:", error);
+        return [];
     }
 }
