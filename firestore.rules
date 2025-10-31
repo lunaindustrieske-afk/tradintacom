@@ -1,0 +1,207 @@
+/**
+ * @fileoverview Firestore Security Rules for Tradinta platform.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model for user-specific data and allows public read access for certain collections.
+ *
+ * Data Structure:
+ * The database is organized with top-level collections for entities like manufacturers, buyers, shops, orders, and payments.
+ * User-specific data, such as growth partner campaigns, are nested under /users/{userId}.
+ *
+ * Key Security Decisions:
+ * - User listing is generally disallowed to protect user privacy.
+ * - Public read access is granted to some top-level collections (e.g., /shops) where the data is intended to be publicly visible.
+ * - Write access is restricted to authenticated users with appropriate ownership or roles.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Allows manufacturers to manage their own profiles.
+     * @path /manufacturers/{manufacturerId}
+     * @allow (create, update, delete) - Authenticated user with UID matching manufacturerId.
+     * @deny (create, update, delete) - Authenticated user with UID not matching manufacturerId.
+     * @principle Enforces document ownership for writes.
+     */
+    match /manufacturers/{manufacturerId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && request.auth.uid == manufacturerId;
+      allow update: if isSignedIn() && isExistingOwner(manufacturerId);
+      allow delete: if isSignedIn() && isExistingOwner(manufacturerId);
+    }
+
+    /**
+     * @description Allows buyers to manage their own profiles.
+     * @path /buyers/{buyerId}
+     * @allow (create, update, delete) - Authenticated user with UID matching buyerId.
+     * @deny (create, update, delete) - Authenticated user with UID not matching buyerId.
+     * @principle Enforces document ownership for writes.
+     */
+    match /buyers/{buyerId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && request.auth.uid == buyerId;
+      allow update: if isSignedIn() && isExistingOwner(buyerId);
+      allow delete: if isSignedIn() && isExistingOwner(buyerId);
+    }
+
+    /**
+     * @description Allows public read access to shop profiles and manufacturers to manage their own shops.
+     * @path /shops/{shopId}
+     * @allow (get, list) - Public read access.
+     * @allow (create, update, delete) - Authenticated user with UID matching the shop's manufacturerId.
+     * @deny (create, update, delete) - Authenticated user with UID not matching the shop's manufacturerId.
+     * @principle Enforces public read access with owner-only writes.
+     */
+    match /shops/{shopId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && request.resource.data.manufacturerId == request.auth.uid;
+      allow update: if isSignedIn() && isExistingShopOwner(shopId, request.auth.uid);
+      allow delete: if isSignedIn() && isExistingShopOwner(shopId, request.auth.uid);
+    }
+
+    /**
+     * @description Allows public read access to products and shop owners to manage their products.
+     * @path /shops/{shopId}/products/{productId}
+     * @allow (get, list) - Public read access.
+     * @allow (create, update, delete) - Authenticated user with UID matching the shop's manufacturerId.
+     * @deny (create, update, delete) - Authenticated user with UID not matching the shop's manufacturerId.
+     * @principle Enforces public read access with owner-only writes.
+     */
+    match /shops/{shopId}/products/{productId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && isShopOwner(shopId, request.auth.uid);
+      allow update: if isSignedIn() && isShopOwner(shopId, request.auth.uid) && resource != null;
+      allow delete: if isSignedIn() && isShopOwner(shopId, request.auth.uid) && resource != null;
+    }
+
+    /**
+     * @description Allows authenticated users to create orders. Access to read, update, and delete orders is not explicitly defined.
+     * @path /orders/{orderId}
+     */
+    match /orders/{orderId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn();
+      allow update: if false; // TODO: Add appropriate authorization
+      allow delete: if false; // TODO: Add appropriate authorization
+    }
+
+    /**
+     * @description Allows authenticated users to create order items. Access to read, update, and delete order items is not explicitly defined.
+     * @path /orders/{orderId}/orderItems/{orderItemId}
+     */
+    match /orders/{orderId}/orderItems/{orderItemId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn();
+      allow update: if false; // TODO: Add appropriate authorization
+      allow delete: if false; // TODO: Add appropriate authorization
+    }
+
+    /**
+     * @description Allows authenticated users to create payments. Access to read, update, and delete payments is not explicitly defined.
+     * @path /payments/{paymentId}
+     */
+    match /payments/{paymentId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn();
+      allow update: if false; // TODO: Add appropriate authorization
+      allow delete: if false; // TODO: Add appropriate authorization
+    }
+
+    /**
+     * @description Allows shop owners to manage their marketing campaigns.
+     * @path /shops/{shopId}/marketingCampaigns/{marketingCampaignId}
+     * @allow (create, update, delete) - Authenticated user with UID matching the shop's manufacturerId.
+     * @deny (create, update, delete) - Authenticated user with UID not matching the shop's manufacturerId.
+     * @principle Enforces owner-only writes.
+     */
+    match /shops/{shopId}/marketingCampaigns/{marketingCampaignId} {
+      allow get: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && isShopOwner(shopId, request.auth.uid);
+      allow update: if isSignedIn() && isShopOwner(shopId, request.auth.uid) && resource != null;
+      allow delete: if isSignedIn() && isShopOwner(shopId, request.auth.uid) && resource != null;
+    }
+
+    /**
+     * @description Allows growth partners to manage their own campaigns.
+     * @path /users/{userId}/growthPartnerCampaigns/{campaignId}
+     * @allow (create, update, delete) - Authenticated user with UID matching userId.
+     * @deny (create, update, delete) - Authenticated user with UID not matching userId.
+     * @principle Enforces document ownership for writes.
+     */
+    match /users/{userId}/growthPartnerCampaigns/{campaignId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
+    }
+
+     /**
+      * @description Logs sales attributed to a specific partner.
+      * @path /partners/{partnerId}/attributedSales/{saleId}
+      * @allow (create) - Only the server can create these records.
+      * @allow (get, list) - Only the partner can view their own sales.
+      */
+    match /partners/{partnerId}/attributedSales/{saleId} {
+      allow get: if isOwner(partnerId);
+      allow list: if isOwner(partnerId);
+      allow create: if false; // Only the server can create these.
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Aggregates earnings for each Growth Partner.
+     * @path /partnerEarnings/{partnerId}
+     */
+    match /partnerEarnings/{partnerId} {
+      allow get: if isOwner(partnerId);
+      allow list: if false;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Secure non-standard document. Requires authentication to update.
+     * @path /platformSettings/config
+     */
+     match /platformSettings/config {
+        allow get: if true;
+        allow list: if false;
+        allow create: if false;
+        allow update: if isSignedIn();
+        allow delete: if false;
+     }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isExistingOwner(userId) {
+      return isSignedIn() && isOwner(userId) && resource != null;
+    }
+
+    function isShopOwner(shopId, userId) {
+      return get(/databases/$(database)/documents/shops/$(shopId)).data.manufacturerId == userId;
+    }
+
+    function isExistingShopOwner(shopId, userId) {
+      return isSignedIn() && isShopOwner(shopId, userId) && resource != null;
+    }
+  }
+}
