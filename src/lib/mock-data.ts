@@ -202,5 +202,3 @@ export const campaigns: Campaign[] = [
     { id: 'CAMP-03', name: 'Back to School Special', status: 'Expired', startDate: '2023-08-01', endDate: '2023-08-31', budget: 30000, impressions: 85000, clicks: 4500 },
     { id: 'CAMP-04', name: 'Q1 2024 Planning', status: 'Draft', startDate: '2024-01-01', endDate: '2024-03-31', budget: 100000, impressions: 0, clicks: 0 },
 ];
-
-    

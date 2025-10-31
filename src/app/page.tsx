@@ -262,7 +262,7 @@ export default async function HomePage() {
                                         data-ai-hint={image?.imageHint}
                                     />
                                 </div>
-                                <div className="p-3 w-full">
+                                <div className="p-2 text-center flex-grow flex items-center justify-center h-16">
                                     <p className="font-semibold text-sm leading-tight whitespace-normal">{category.name}</p>
                                 </div>
                             </CardContent>

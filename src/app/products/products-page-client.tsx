@@ -381,7 +381,7 @@ export function ProductsPageClient({
             onFilterChange={handleFilterChange}
             onApplyFilters={applyFiltersToUrl}
             onResetFilters={handleResetFilters}
-            activeTab={activeTab}
+            activeTab={activeTab as any}
           />
         </aside>
 
@@ -413,7 +413,7 @@ export function ProductsPageClient({
                         onFilterChange={handleFilterChange}
                         onApplyFilters={applyFiltersToUrl}
                         onResetFilters={handleResetFilters}
-                        activeTab={activeTab}
+                        activeTab={activeTab as any}
                     />
                   </SheetContent>
                 </Sheet>

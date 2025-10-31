@@ -12,5 +12,3 @@ export {
     ProductService,
     SellerService
 }
-
-    
