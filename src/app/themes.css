@@ -11,11 +11,11 @@
   }
   
   .tradinta-blue {
-    --shop-primary: 217 91% 60%;
+    --shop-primary: 199 89% 53%; /* hsl(199, 89%, 53%) -> #29ABE2 */
     --shop-primary-foreground: 210 40% 98%;
-    --shop-secondary: 215 28% 83%;
+    --shop-secondary: 192 100% 95%; /* hsl(192, 100%, 95%) -> #E0F7FA */
     --shop-secondary-foreground: 222 47% 11%;
-    --shop-accent: 217 91% 60%;
+    --shop-accent: 175 80% 51%; /* hsl(175, 80%, 51%) -> #2EE6D6 */
     --shop-accent-foreground: 210 40% 98%;
   }
 
